@@ -1,0 +1,419 @@
+from rest_framework import viewsets
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from core.responses import success_response
+from .models import (
+    StudentProfile,
+    TeacherProfile,
+    ResponsibleProfile,
+    SchoolClass,
+    Subject,
+    ClassSubjectAssignment,
+    StudentResponsible,
+)
+
+from .permissions import (
+    StudentProfilePermission,
+    TeacherProfilePermission,
+    ResponsibleProfilePermission,
+    SchoolClassPermission,
+    SubjectPermission,
+    ClassSubjectAssignmentPermission,
+    StudentResponsiblePermission,
+)
+
+from .serializers import (
+    StudentProfileSerializer,
+    TeacherProfileSerializer,
+    ResponsibleProfileSerializer,
+    SchoolClassSerializer,
+    ClassSubjectAssignmentSerializer,
+    StudentResponsibleSerializer,
+    SubjectSerializer,
+)
+from grades.models import Grade
+from grades.serializers import GradeSerializer
+from core.responses import CustomResponseMixin
+
+
+class StudentProfileViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Students retrieved successfully.",
+        "retrieve": "Student retrieved successfully.",
+        "create": "Student created successfully.",
+        "update": "Student updated successfully.",
+        "partial_update": "Student updated successfully.",
+        "destroy": "Student deleted successfully.",
+    }
+
+    serializer_class = StudentProfileSerializer
+    permission_classes = [StudentProfilePermission]
+
+    filterset_fields = ['school_class']
+    search_fields = [
+        'user__username',
+        'user__email',
+        'admission_no',
+    ]
+    ordering_fields = [
+        'user__username',
+        'admission_no',
+    ]
+    ordering = ['admission_no']
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = StudentProfile.objects.select_related(
+            'user',
+            'school_class',
+        )
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'teacher':
+            return queryset.filter(
+                school_class__subject_assignments__teacher__user_id=user.id
+            ).distinct()
+
+        if user.role == 'student':
+            return queryset.filter(
+                user_id=user.id
+            )
+
+        if user.role == 'responsible':
+            return queryset.filter(
+                responsible_links__responsible__user_id=user.id
+            ).distinct()
+
+        return queryset.none()
+
+
+class TeacherProfileViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Teachers retrieved successfully.",
+        "retrieve": "Teacher retrieved successfully.",
+        "create": "Teacher created successfully.",
+        "update": "Teacher updated successfully.",
+        "partial_update": "Teacher updated successfully.",
+        "destroy": "Teacher deleted successfully.",
+    }
+    serializer_class = TeacherProfileSerializer
+    permission_classes = [TeacherProfilePermission]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = TeacherProfile.objects.select_related('user')
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'teacher':
+            return queryset.filter(user_id=user.id)
+
+        return queryset.none()
+
+
+class ResponsibleProfileViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Responsibles retrieved successfully.",
+        "retrieve": "Responsible retrieved successfully.",
+        "create": "Responsible created successfully.",
+        "update": "Responsible updated successfully.",
+        "partial_update": "Responsible updated successfully.",
+        "destroy": "Responsible deleted successfully.",
+    }
+    serializer_class = ResponsibleProfileSerializer
+    permission_classes = [ResponsibleProfilePermission]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = ResponsibleProfile.objects.select_related('user')
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'responsible':
+            return queryset.filter(user_id=user.id)
+
+        return queryset.none()
+
+
+class SchoolClassViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Classes retrieved successfully.",
+        "retrieve": "Class retrieved successfully.",
+        "create": "Class created successfully.",
+        "update": "Class updated successfully.",
+        "partial_update": "Class updated successfully.",
+        "destroy": "Class deleted successfully.",
+    }
+    serializer_class = SchoolClassSerializer
+    permission_classes = [SchoolClassPermission]
+
+    filterset_fields = ['academic_year']
+    search_fields = ['name']
+    ordering_fields = [
+        'name',
+        'academic_year',
+        'created_at',
+    ]
+    ordering = ['name']
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = SchoolClass.objects.select_related(
+            'homeroom_teacher__user'
+        )
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'teacher':
+            return queryset.filter(
+                subject_assignments__teacher__user_id=user.id
+            ).distinct()
+
+        if user.role == 'student':
+            return queryset.filter(
+                id=user.student_profile.school_class_id
+            )
+
+        if user.role == 'responsible':
+            return queryset.filter(
+                students__responsible_links__responsible__user_id=user.id
+            ).distinct()
+
+        return queryset.none()
+
+
+class SubjectViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Subjects retrieved successfully.",
+        "retrieve": "Subject retrieved successfully.",
+        "create": "Subject created successfully.",
+        "update": "Subject updated successfully.",
+        "partial_update": "Subject updated successfully.",
+        "destroy": "Subject deleted successfully.",
+    }
+    serializer_class = SubjectSerializer
+    permission_classes = [SubjectPermission]
+
+    search_fields = [
+        'name',
+        'code',
+    ]
+    ordering_fields = [
+        'name',
+        'code',
+    ]
+    ordering = ['name']
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = Subject.objects.all()
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'teacher':
+            return queryset.filter(
+                class_assignments__teacher__user_id=user.id
+            ).distinct()
+
+        if user.role == 'student':
+            return queryset.filter(
+                class_assignments__school_class_id=(
+                    user.student_profile.school_class_id
+                )
+            ).distinct()
+
+        if user.role == 'responsible':
+            return queryset.filter(
+                class_assignments__school_class__students__responsible_links__responsible__user_id=user.id
+            ).distinct()
+
+        return queryset.none()
+
+
+class ClassSubjectAssignmentViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Assignments retrieved successfully.",
+        "retrieve": "Assignment retrieved successfully.",
+        "create": "Assignment created successfully.",
+        "update": "Assignment updated successfully.",
+        "partial_update": "Assignment updated successfully.",
+        "destroy": "Assignment deleted successfully.",
+    }
+    serializer_class = ClassSubjectAssignmentSerializer
+    permission_classes = [ClassSubjectAssignmentPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = ClassSubjectAssignment.objects.select_related(
+            'school_class',
+            'subject',
+            'teacher__user',
+        )
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'teacher':
+            return queryset.filter(
+                teacher__user_id=user.id
+            )
+
+        if user.role == 'student':
+            return queryset.filter(
+                school_class_id=user.student_profile.school_class_id
+            )
+
+        if user.role == 'responsible':
+            return queryset.filter(
+                school_class__students__responsible_links__responsible__user_id=user.id
+            ).distinct()
+
+        return queryset.none()
+
+class StudentResponsibleViewSet(
+    CustomResponseMixin,
+    viewsets.ModelViewSet,
+):
+    success_messages = {
+        "list": "Student-responsible links retrieved successfully.",
+        "retrieve": "Student-responsible link retrieved successfully.",
+        "create": "Student-responsible link created successfully.",
+        "update": "Student-responsible link updated successfully.",
+        "partial_update": "Student-responsible link updated successfully.",
+        "destroy": "Student-responsible link deleted successfully.",
+    }
+    serializer_class = StudentResponsibleSerializer
+    permission_classes = [StudentResponsiblePermission]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        queryset = StudentResponsible.objects.select_related(
+            'student__user',
+            'student__school_class',
+            'responsible__user',
+        )
+
+        if user.role == 'admin':
+            return queryset
+
+        if user.role == 'student':
+            return queryset.filter(
+                student__user_id=user.id
+            )
+
+        if user.role == 'responsible':
+            return queryset.filter(
+                responsible__user_id=user.id
+            )
+
+        return queryset.none()
+
+class StudentReportCardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = request.user
+
+        # Find the student.
+        try:
+            student = StudentProfile.objects.select_related(
+                'user',
+                'school_class',
+            ).get(pk=pk)
+
+        except StudentProfile.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound('Student not found.')
+
+        # Authorization.
+        if user.role == 'admin':
+            allowed = True
+
+        elif user.role == 'student':
+            allowed = student.user_id == user.id
+
+        elif user.role == 'responsible':
+            allowed = student.responsible_links.filter(
+                responsible__user_id=user.id
+            ).exists()
+
+        elif user.role == 'teacher':
+            allowed = student.school_class.subject_assignments.filter(
+                teacher__user_id=user.id
+            ).exists()
+
+        else:
+            allowed = False
+
+        if not allowed:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(
+                'You do not have permission to view this report card.'
+            )
+
+        grades = Grade.objects.select_related(
+            'student__user',
+            'school_class',
+            'subject',
+            'teacher__user',
+        ).filter(
+            student=student
+        )
+
+        serializer = GradeSerializer(
+            grades,
+            many=True,
+            context={'request': request},
+        )
+
+        data = {
+            'student': {
+                'id': student.id,
+                'username': student.user.username,
+                'admission_no': student.admission_no,
+                'school_class': student.school_class.name,
+            },
+            'grades': serializer.data,
+        }
+
+        return success_response(
+            data=data,
+            message='Student report card retrieved successfully.',
+            status=status.HTTP_200_OK,
+            request=request,
+        )
