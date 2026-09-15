@@ -1,10 +1,15 @@
 from rest_framework import serializers
 
-from school.models import ClassSubjectAssignment
+from school.models import ClassSubjectAssignment, TeacherProfile
 from .models import Grade
 
 
 class GradeSerializer(serializers.ModelSerializer):
+    teacher = serializers.PrimaryKeyRelatedField(
+        queryset=TeacherProfile.objects.all(),
+        required=False
+    )
+
     student_name = serializers.CharField(
         source='student.user.username',
         read_only=True
@@ -42,7 +47,6 @@ class GradeSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
-            'teacher',
             'created_at',
             'updated_at',
         ]
@@ -52,7 +56,6 @@ class GradeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Score must be between 0 and 100.'
             )
-
         return value
 
     def validate(self, attrs):
@@ -72,23 +75,34 @@ class GradeSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
 
-        # Teacher must be assigned to this class + subject.
-        if request and request.user.role == 'teacher':
-            teacher_profile = request.user.teacher_profile
+        if request:
+            if request.user.role == 'teacher':
+                teacher_profile = request.user.teacher_profile
 
-            if school_class and subject:
-                assignment_exists = ClassSubjectAssignment.objects.filter(
-                    school_class=school_class,
-                    subject=subject,
-                    teacher=teacher_profile,
-                ).exists()
+                # Never allow a teacher to choose another teacher.
+                attrs['teacher'] = teacher_profile
 
-                if not assignment_exists:
+                if school_class and subject:
+                    assignment_exists = (
+                        ClassSubjectAssignment.objects.filter(
+                            school_class=school_class,
+                            subject=subject,
+                            teacher=teacher_profile,
+                        ).exists()
+                    )
+
+                    if not assignment_exists:
+                        raise serializers.ValidationError({
+                            'subject': (
+                                'You are not assigned to this subject '
+                                'for this class.'
+                            )
+                        })
+
+            elif request.user.role == 'admin':
+                if not attrs.get('teacher'):
                     raise serializers.ValidationError({
-                        'subject': (
-                            'You are not assigned to this subject '
-                            'for this class.'
-                        )
+                        'teacher': 'This field is required for Admin.'
                     })
 
         return attrs
