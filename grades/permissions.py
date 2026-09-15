@@ -7,25 +7,18 @@ class GradePermission(BasePermission):
     def has_permission(self, request, view):
         user = request.user
 
-        if not (
-            user.is_authenticated
-            and user.is_active
-        ):
+        if not (user.is_authenticated and user.is_active):
             return False
 
-        # Admin: full access.
         if user.role == "admin":
             return True
 
-        # Teacher: can read and write grades.
         if user.role == "teacher":
-            return True
+            return request.method in ["GET", "POST", "PUT", "PATCH"]
 
-        # Student: read only.
         if user.role == "student":
             return request.method in SAFE_METHODS
 
-        # Responsible: read only.
         if user.role == "responsible":
             return request.method in SAFE_METHODS
 
