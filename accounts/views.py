@@ -6,7 +6,7 @@ from rest_framework import generics
 from core.responses import CustomResponseMixin
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
+from drf_spectacular.utils import extend_schema
 from .serializers import (
     UserRegistrationSerializer,
     CustomTokenObtainPairSerializer,
@@ -88,7 +88,10 @@ class MeView(APIView):
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @extend_schema(
+    request=ChangePasswordSerializer,
+    responses={200: None},
+)
     def post(self, request):
         serializer = ChangePasswordSerializer(
             data=request.data,
