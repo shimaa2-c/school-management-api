@@ -50,39 +50,40 @@ class GradeSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+    def validate_data(self,attrs):
+        errors={}
+        student=attrs.get('student',getattr(self.instance, 'student', None))
+        school_class=attrs.get('school_class',getattr(self.instance, 'school_class', None))
+        subject=attrs.get('subject',getattr(self.instance, 'subject', None))
+        teacher=attrs.get('teacher',getattr(self.instance, 'teacher', None))
+        request=self.context.get('request')
 
-    def validate_score(self, value):
-        if value < 0 or value > 100:
-            raise serializers.ValidationError(
-                'Score must be between 0 and 100.'
-            )
-        return value
-
-    def validate(self, attrs):
-        student = attrs.get('student')
-        school_class = attrs.get('school_class')
-        subject = attrs.get('subject')
-
-        # Validate student/class relationship.
+        if 'score' in attrs:
+            score = attrs['score']
+            if score < 0 or score > 100:
+                errors['score'] = 'Score must be between 0 and 100.'
+        
         if student and school_class:
             if student.school_class_id != school_class.id:
-                raise serializers.ValidationError({
-                    'school_class': (
-                        'The selected class does not belong '
-                        'to this student.'
-                    )
-                })
-
-        request = self.context.get('request')
-
+                errors['school_class'] = (
+                    'The selected class does not belong '
+                    'to this student.'
+                )
+        
         if request:
-            if request.user.role == 'teacher':
-                teacher_profile = request.user.teacher_profile
+            user = request.user
 
-                # Never allow a teacher to choose another teacher.
-                attrs['teacher'] = teacher_profile
+            if user.role == 'teacher':
+
+                teacher_profile = user.teacher_profile
+
+                if teacher and teacher != teacher_profile:
+                    errors['teacher'] = (
+                        'You can only manage your own grades.'
+                    )
 
                 if school_class and subject:
+
                     assignment_exists = (
                         ClassSubjectAssignment.objects.filter(
                             school_class=school_class,
@@ -92,17 +93,72 @@ class GradeSerializer(serializers.ModelSerializer):
                     )
 
                     if not assignment_exists:
-                        raise serializers.ValidationError({
-                            'subject': (
-                                'You are not assigned to this subject '
-                                'for this class.'
-                            )
-                        })
+                        errors['subject'] = (
+                            'You are not assigned to this subject '
+                            'for this class.'
+                        )
 
-            elif request.user.role == 'admin':
-                if not attrs.get('teacher'):
-                    raise serializers.ValidationError({
-                        'teacher': 'This field is required for Admin.'
-                    })
+            elif user.role == 'admin':
 
-        return attrs
+                if self.instance is None and not teacher:
+                    errors['teacher'] = (
+                        'Teacher is required for Admin.'
+                    )
+
+        return errors
+    
+    # def validate_score(self, value):
+    #     if value < 0 or value > 100:
+    #         raise serializers.ValidationError(
+    #             'Score must be between 0 and 100.'
+    #         )
+    #     return value
+
+    # def validate(self, attrs):
+    #     student = attrs.get('student')
+    #     school_class = attrs.get('school_class')
+    #     subject = attrs.get('subject')
+
+    #     # Validate student/class relationship.
+    #     if student and school_class:
+    #         if student.school_class_id != school_class.id:
+    #             raise serializers.ValidationError({
+    #                 'school_class': (
+    #                     'The selected class does not belong '
+    #                     'to this student.'
+    #                 )
+    #             })
+
+    #     request = self.context.get('request')
+
+    #     if request:
+    #         if request.user.role == 'teacher':
+    #             teacher_profile = request.user.teacher_profile
+
+    #             # Never allow a teacher to choose another teacher.
+    #             attrs['teacher'] = teacher_profile
+
+    #             if school_class and subject:
+    #                 assignment_exists = (
+    #                     ClassSubjectAssignment.objects.filter(
+    #                         school_class=school_class,
+    #                         subject=subject,
+    #                         teacher=teacher_profile,
+    #                     ).exists()
+    #                 )
+
+    #                 if not assignment_exists:
+    #                     raise serializers.ValidationError({
+    #                         'subject': (
+    #                             'You are not assigned to this subject '
+    #                             'for this class.'
+    #                         )
+    #                     })
+
+    #         elif request.user.role == 'admin':
+    #             if not attrs.get('teacher'):
+    #                 raise serializers.ValidationError({
+    #                     'teacher': 'This field is required for Admin.'
+    #                 })
+
+    #     return attrs

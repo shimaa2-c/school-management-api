@@ -65,13 +65,127 @@ class GradeViewSet(
             ).distinct()
 
         return queryset.none()
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data=request.data
+        )
+        errors = serializer.validate_data(
+            serializer.to_internal_value(request.data)
+        )
 
-    def perform_create(self, serializer):
-        user = self.request.user
-
-        if user.role == 'teacher':
-            serializer.save(
-                teacher=user.teacher_profile
+        if errors:
+            return Response(
+                {
+                    'message': 'Validation failed.',
+                    'errors': errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST
             )
-        else:
-            serializer.save()
+
+        data = serializer.validated_data
+        if request.user.role == 'teacher':
+            data['teacher'] = request.user.teacher_profile
+
+        grade = Grade.objects.create(**data)
+
+        response_serializer = self.get_serializer(grade)
+
+        return Response(
+            {
+                'message': 'Grade created successfully.',
+                'data': response_serializer.data,
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    def update(self, request, *args, **kwargs):
+
+        grade = self.get_object()
+
+        serializer = self.get_serializer(
+            grade,
+            data=request.data
+        )
+
+        data = serializer.to_internal_value(request.data)
+
+        errors = serializer.validate_data(data)
+
+        if errors:
+            return Response(
+                {
+                    'message': 'Validation failed.',
+                    'errors': errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if request.user.role == 'teacher':
+            data['teacher'] = request.user.teacher_profile
+
+        for field, value in data.items():
+            setattr(grade, field, value)
+
+        grade.save()
+
+        response_serializer = self.get_serializer(grade)
+
+        return Response(
+            {
+                'message': 'Grade updated successfully.',
+                'data': response_serializer.data,
+            },
+            status=status.HTTP_200_OK
+    )
+
+    def partial_update(self, request, *args, **kwargs):
+
+        grade = self.get_object()
+
+        serializer = self.get_serializer(
+            grade,
+            data=request.data,
+            partial=True
+        )
+
+        data = serializer.to_internal_value(request.data)
+
+        errors = serializer.validate_data(data)
+
+        if errors:
+            return Response(
+                {
+                    'message': 'Validation failed.',
+                    'errors': errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if request.user.role == 'teacher':
+            data['teacher'] = request.user.teacher_profile
+
+        for field, value in data.items():
+            setattr(grade, field, value)
+
+        grade.save()
+
+        response_serializer = self.get_serializer(grade)
+
+        return Response(
+            {
+                'message': 'Grade updated successfully.',
+                'data': response_serializer.data,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    # def perform_create(self, serializer):
+    #     user = self.request.user
+
+    #     if user.role == 'teacher':
+    #         serializer.save(
+    #             teacher=user.teacher_profile
+    #         )
+    #     else:
+    #         serializer.save()
