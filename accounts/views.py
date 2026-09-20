@@ -88,21 +88,62 @@ class MeView(APIView):
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
+
     @extend_schema(
-    request=ChangePasswordSerializer,
-    responses={200: None},
-)
+        request=ChangePasswordSerializer,
+        responses={200: None},
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(
-            data=request.data,
-            context={'request': request},
+            data=request.data
         )
 
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Validation failed.',
+                    'data': None,
+                    'errors': serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        request.user.set_password(
-            serializer.validated_data['new_password']
-        )
+        old_password = serializer.validated_data['old_password']
+        new_password = serializer.validated_data['new_password']
+
+        if not request.user.check_password(old_password):
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Validation failed.',
+                    'data': None,
+                    'errors': {
+                        'old_password': [
+                            'Old password is incorrect.'
+                        ]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if old_password == new_password:
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Validation failed.',
+                    'data': None,
+                    'errors': {
+                        'new_password': [
+                            'New password must be different from '
+                            'the old password.'
+                        ]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.set_password(new_password)
         request.user.save()
 
         return Response(

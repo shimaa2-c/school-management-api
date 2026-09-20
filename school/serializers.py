@@ -37,18 +37,18 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             'email',
         ]
 
-    def validate_user(self, user):
-        if user.role != 'teacher':
-            raise serializers.ValidationError(
-                'The selected user must have the teacher role.'
-            )
+    # def validate_user(self, user):
+    #     if user.role != 'teacher':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the teacher role.'
+    #         )
 
-        if hasattr(user, 'teacher_profile'):
-            raise serializers.ValidationError(
-                'This user already has a teacher profile.'
-            )
+    #     if hasattr(user, 'teacher_profile'):
+    #         raise serializers.ValidationError(
+    #             'This user already has a teacher profile.'
+    #         )
 
-        return user
+    #     return user
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -84,18 +84,18 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             'class_name',
         ]
 
-    def validate_user(self, user):
-        if user.role != 'student':
-            raise serializers.ValidationError(
-                'The selected user must have the student role.'
-            )
+    # def validate_user(self, user):
+    #     if user.role != 'student':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the student role.'
+    #         )
 
-        if hasattr(user, 'student_profile'):
-            raise serializers.ValidationError(
-                'This user already has a student profile.'
-            )
+    #     if hasattr(user, 'student_profile'):
+    #         raise serializers.ValidationError(
+    #             'This user already has a student profile.'
+    #         )
 
-        return user
+    #     return user
 
 
 class ResponsibleProfileSerializer(serializers.ModelSerializer):
@@ -123,18 +123,18 @@ class ResponsibleProfileSerializer(serializers.ModelSerializer):
             'email',
         ]
 
-    def validate_user(self, user):
-        if user.role != 'responsible':
-            raise serializers.ValidationError(
-                'The selected user must have the responsible role.'
-            )
+    # def validate_user(self, user):
+    #     if user.role != 'responsible':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the responsible role.'
+    #         )
 
-        if hasattr(user, 'responsible_profile'):
-            raise serializers.ValidationError(
-                'This user already has a responsible profile.'
-            )
+    #     if hasattr(user, 'responsible_profile'):
+    #         raise serializers.ValidationError(
+    #             'This user already has a responsible profile.'
+    #         )
 
-        return user
+    #     return user
 
 
 class StudentResponsibleSerializer(serializers.ModelSerializer):
@@ -163,21 +163,21 @@ class StudentResponsibleSerializer(serializers.ModelSerializer):
             'responsible_name',
         ]
 
-    def validate_student(self, student):
-        if student.user.role != 'student':
-            raise serializers.ValidationError(
-                'The selected user must have the student role.'
-            )
+    # def validate_student(self, student):
+    #     if student.user.role != 'student':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the student role.'
+    #         )
 
-        return student
+    #     return student
 
-    def validate_responsible(self, responsible):
-        if responsible.user.role != 'responsible':
-            raise serializers.ValidationError(
-                'The selected user must have the responsible role.'
-            )
+    # def validate_responsible(self, responsible):
+    #     if responsible.user.role != 'responsible':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the responsible role.'
+    #         )
 
-        return responsible
+    #     return responsible
 
 
 class SchoolClassSerializer(serializers.ModelSerializer):
@@ -202,13 +202,13 @@ class SchoolClassSerializer(serializers.ModelSerializer):
             'homeroom_teacher_name',
         ]
 
-    def validate_homeroom_teacher(self, teacher):
-        if teacher is not None and teacher.user.role != 'teacher':
-            raise serializers.ValidationError(
-                'Homeroom teacher must have the teacher role.'
-            )
+    # def validate_homeroom_teacher(self, teacher):
+    #     if teacher is not None and teacher.user.role != 'teacher':
+    #         raise serializers.ValidationError(
+    #             'Homeroom teacher must have the teacher role.'
+    #         )
 
-        return teacher
+    #     return teacher
 
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -251,10 +251,10 @@ class ClassSubjectAssignmentSerializer(serializers.ModelSerializer):
             'teacher_name',
         ]
 
-    def validate_teacher(self, teacher):
-        if teacher.user.role != 'teacher':
-            raise serializers.ValidationError(
-                'The selected user must have the teacher role.'
-            )
+    # def validate_teacher(self, teacher):
+    #     if teacher.user.role != 'teacher':
+    #         raise serializers.ValidationError(
+    #             'The selected user must have the teacher role.'
+    #         )
 
-        return teacher
+    #     return teacher

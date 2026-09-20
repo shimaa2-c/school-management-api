@@ -69,26 +69,26 @@ class ChangePasswordSerializer(serializers.Serializer):
         min_length=8
     )
 
-    def validate_old_password(self, value):
-        user = self.context['request'].user
+    # def validate_old_password(self, value):
+    #     user = self.context['request'].user
 
-        if not user.check_password(value):
-            raise serializers.ValidationError(
-                'Old password is incorrect.'
-            )
+    #     if not user.check_password(value):
+    #         raise serializers.ValidationError(
+    #             'Old password is incorrect.'
+    #         )
 
-        return value
+    #     return value
 
-    def validate(self, attrs):
-        if attrs['old_password'] == attrs['new_password']:
-            raise serializers.ValidationError({
-                'new_password': (
-                    'New password must be different from '
-                    'the old password.'
-                )
-            })
+    # def validate(self, attrs):
+    #     if attrs['old_password'] == attrs['new_password']:
+    #         raise serializers.ValidationError({
+    #             'new_password': (
+    #                 'New password must be different from '
+    #                 'the old password.'
+    #             )
+    #         })
 
-        return attrs
+    #     return attrs
     
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

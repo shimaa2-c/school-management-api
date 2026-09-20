@@ -40,12 +40,7 @@ from grades.models import Grade
 from grades.serializers import GradeSerializer
 
 def get_student_class_id(user):
-    """
-    Safely get the student's class ID.
-
-    Returns None if the user does not have a StudentProfile
-    or if the StudentProfile has no class.
-    """
+    
     try:
         student_profile = user.student_profile
     except StudentProfile.DoesNotExist:
@@ -111,6 +106,148 @@ class StudentProfileViewSet(
             ).distinct()
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        user = data.get(
+            "user",
+            instance.user if instance else None
+        )
+
+        if user.role != "student":
+            return {
+                "user": "The selected user must have the student role."
+            }
+
+        if (
+            hasattr(user, "student_profile")
+            and (
+                instance is None
+                or user.student_profile.id != instance.id
+            )
+        ):
+            return {
+                "user": "This user already has a student profile."
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student = serializer.save()
+
+        return Response(
+            {
+                "message": "Student created successfully.",
+                "data": self.get_serializer(student).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        student = self.get_object()
+
+        serializer = self.get_serializer(
+            student,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=student,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student = serializer.save()
+
+        return Response(
+            {
+                "message": "Student updated successfully.",
+                "data": self.get_serializer(student).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        student = self.get_object()
+
+        serializer = self.get_serializer(
+            student,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=student,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student = serializer.save()
+
+        return Response(
+            {
+                "message": "Student updated successfully.",
+                "data": self.get_serializer(student).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class TeacherProfileViewSet(
@@ -145,6 +282,147 @@ class TeacherProfileViewSet(
             )
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        user = data.get(
+            "user",
+            instance.user if instance else None
+        )
+
+        if user.role != "teacher":
+            return {
+                "user": "The selected user must have the teacher role."
+            }
+
+        if (
+            hasattr(user, "teacher_profile")
+            and (
+                instance is None
+                or user.teacher_profile.id != instance.id
+            )
+        ):
+            return {
+                "user": "This user already has a teacher profile."
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        teacher = serializer.save()
+
+        return Response(
+            {
+                "message": "Teacher created successfully.",
+                "data": self.get_serializer(teacher).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        teacher = self.get_object()
+
+        serializer = self.get_serializer(
+            teacher,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=teacher,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        teacher = serializer.save()
+
+        return Response(
+            {
+                "message": "Teacher updated successfully.",
+                "data": self.get_serializer(teacher).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        teacher = self.get_object()
+
+        serializer = self.get_serializer(
+            teacher,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=teacher,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        teacher = serializer.save()
+
+        return Response(
+            {
+                "message": "Teacher updated successfully.",
+                "data": self.get_serializer(teacher).data,
+            },
+            status=status.HTTP_200_OK,)
 
 
 class ResponsibleProfileViewSet(
@@ -179,6 +457,154 @@ class ResponsibleProfileViewSet(
             )
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        user = data.get(
+            "user",
+            instance.user if instance else None
+        )
+
+        if user.role != "responsible":
+            return {
+                "user": (
+                    "The selected user must have "
+                    "the responsible role."
+                )
+            }
+
+        if (
+            hasattr(user, "responsible_profile")
+            and (
+                instance is None
+                or user.responsible_profile.id != instance.id
+            )
+        ):
+            return {
+                "user": (
+                    "This user already has "
+                    "a responsible profile."
+                )
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        responsible = serializer.save()
+
+        return Response(
+            {
+                "message": "Responsible created successfully.",
+                "data": self.get_serializer(responsible).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        responsible = self.get_object()
+
+        serializer = self.get_serializer(
+            responsible,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=responsible,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        responsible = serializer.save()
+
+        return Response(
+            {
+                "message": "Responsible updated successfully.",
+                "data": self.get_serializer(responsible).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        responsible = self.get_object()
+
+        serializer = self.get_serializer(
+            responsible,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=responsible,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        responsible = serializer.save()
+
+        return Response(
+            {
+                "message": "Responsible updated successfully.",
+                "data": self.get_serializer(responsible).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class SchoolClassViewSet(
@@ -247,6 +673,140 @@ class SchoolClassViewSet(
             ).distinct()
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        teacher = data.get(
+            "homeroom_teacher",
+            instance.homeroom_teacher if instance else None
+        )
+
+        if teacher is not None and teacher.user.role != "teacher":
+            return {
+                "homeroom_teacher": (
+                    "Homeroom teacher must have "
+                    "the teacher role."
+                )
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        school_class = serializer.save()
+
+        return Response(
+            {
+                "message": "Class created successfully.",
+                "data": self.get_serializer(school_class).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        school_class = self.get_object()
+
+        serializer = self.get_serializer(
+            school_class,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=school_class,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        school_class = serializer.save()
+
+        return Response(
+            {
+                "message": "Class updated successfully.",
+                "data": self.get_serializer(school_class).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        school_class = self.get_object()
+
+        serializer = self.get_serializer(
+            school_class,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=school_class,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        school_class = serializer.save()
+
+        return Response(
+            {
+                "message": "Class updated successfully.",
+                "data": self.get_serializer(school_class).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class SubjectViewSet(
@@ -365,6 +925,140 @@ class ClassSubjectAssignmentViewSet(
             ).distinct()
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        teacher = data.get(
+            "teacher",
+            instance.teacher if instance else None
+        )
+
+        if teacher.user.role != "teacher":
+            return {
+                "teacher": (
+                    "The selected user must have "
+                    "the teacher role."
+                )
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        assignment = serializer.save()
+
+        return Response(
+            {
+                "message": "Assignment created successfully.",
+                "data": self.get_serializer(assignment).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        assignment = self.get_object()
+
+        serializer = self.get_serializer(
+            assignment,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=assignment,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        assignment = serializer.save()
+
+        return Response(
+            {
+                "message": "Assignment updated successfully.",
+                "data": self.get_serializer(assignment).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        assignment = self.get_object()
+
+        serializer = self.get_serializer(
+            assignment,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=assignment,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        assignment = serializer.save()
+
+        return Response(
+            {
+                "message": "Assignment updated successfully.",
+                "data": self.get_serializer(assignment).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 
@@ -410,6 +1104,153 @@ class StudentResponsibleViewSet(
             )
 
         return queryset.none()
+    
+    def _validate_business_rules(self, data, instance=None):
+        student = data.get(
+            "student",
+            instance.student if instance else None
+        )
+
+        responsible = data.get(
+            "responsible",
+            instance.responsible if instance else None
+        )
+
+        if student.user.role != "student":
+            return {
+                "student": (
+                    "The selected user must have "
+                    "the student role."
+                )
+            }
+
+        if responsible.user.role != "responsible":
+            return {
+                "responsible": (
+                    "The selected user must have "
+                    "the responsible role."
+                )
+            }
+
+        return None
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        relationship = serializer.save()
+
+        return Response(
+            {
+                "message": "Student-responsible link created successfully.",
+                "data": self.get_serializer(relationship).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        relationship = self.get_object()
+
+        serializer = self.get_serializer(
+            relationship,
+            data=request.data,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=relationship,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        relationship = serializer.save()
+
+        return Response(
+            {
+                "message": "Student-responsible link updated successfully.",
+                "data": self.get_serializer(relationship).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        relationship = self.get_object()
+
+        serializer = self.get_serializer(
+            relationship,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        errors = self._validate_business_rules(
+            serializer.validated_data,
+            instance=relationship,
+        )
+
+        if errors:
+            return Response(
+                {
+                    "message": "Validation failed.",
+                    "errors": errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        relationship = serializer.save()
+
+        return Response(
+            {
+                "message": "Student-responsible link updated successfully.",
+                "data": self.get_serializer(relationship).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class StudentReportCardView(APIView):

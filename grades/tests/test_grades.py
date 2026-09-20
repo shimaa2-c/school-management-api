@@ -187,7 +187,7 @@ class GradeTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_403_FORBIDDEN,
         )
 
     def test_teacher_cannot_grade_unassigned_subject(self):
@@ -210,7 +210,7 @@ class GradeTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_403_FORBIDDEN,
         )
 
     def test_teacher_cannot_grade_student_from_wrong_class(self):
