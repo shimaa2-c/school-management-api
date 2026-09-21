@@ -5,22 +5,26 @@ from .models import User
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    
+    username=serializers.CharField()
+    password=serializers.CharField(write_only=True)
+    email=serializers.EmailField()
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
-        extra_kwargs = {
-            'password': {
-                'write_only': True,
-            },
-        }
+        # extra_kwargs = {
+        #     'password': {
+        #         'write_only': True,
+        #     },
+        # }
 
-    def create(self, validated_data):
-        return User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            role='student',
-        )
+    # def create(self, validated_data):
+    #     return User.objects.create_user(
+    #         username=validated_data['username'],
+    #         email=validated_data['email'],
+    #         password=validated_data['password'],
+    #         role='student',
+    #     )
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -65,8 +69,8 @@ class ChangePasswordSerializer(serializers.Serializer):
         write_only=True
     )
     new_password = serializers.CharField(
-        write_only=True,
-        min_length=8
+        write_only=True
+        # min_length=8
     )
 
     # def validate_old_password(self, value):

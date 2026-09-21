@@ -18,12 +18,74 @@ from rest_framework import viewsets
 from .models import User
 from .permissions import IsAdminRole
 from .serializers import UserSerializer
-
+import string
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = UserRegistrationSerializer
 
+    def create(self, request, *args, **kwargs):
+
+        serializer = UserRegistrationSerializer(data=request.data)
+
+        if serializer.is_valid():
+
+            username = serializer.validated_data['username']
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+
+            if User.objects.filter(username=username).exists():
+                return Response(
+                    {'error': 'username already exists'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if User.objects.filter(email=email).exists():
+                return Response(
+                    {'error': 'email already exists'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if len(password) < 8:
+                return Response(
+                    {'error': 'password must be at least 8 characters.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not any(char.isupper() for char in password):
+                return Response(
+                    {'error': 'password must contain at least one capital char.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not any(char.islower() for char in password):
+                return Response(
+                    {'error': 'password must contain at least one small char.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not any(char in string.punctuation for char in password):
+                return Response(
+                    {'error': 'password must contain at least one special char.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                role='student'
+            )
+
+            return Response(
+                {'message': 'User created successfully.'},
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
@@ -142,7 +204,29 @@ class ChangePasswordView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if len(new_password) < 8:
+                return Response(
+                    {'error': 'password must be at least 8 characters.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+        if not any(char.isupper() for char in new_password):
+            return Response(
+                {'error': 'password must contain at least one capital char.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not any(char.islower() for char in new_password):
+            return Response(
+                {'error': 'password must contain at least one small char.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not any(char in string.punctuation for char in new_password):
+            return Response(
+                {'error': 'password must contain at least one special char.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         request.user.set_password(new_password)
         request.user.save()
 
