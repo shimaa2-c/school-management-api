@@ -105,22 +105,30 @@ class GradeViewSet(
 
 
         if score is not None and (score < 0 or score > 100):
-
-            return {
-                'score': 'Score must be between 0 and 100.'
-            }, status.HTTP_400_BAD_REQUEST
+            # return {
+            #     'score': 'Score must be between 0 and 100.'
+            # }, status.HTTP_400_BAD_REQUEST
+            return None, {
+                "error": "Score must be between 0 and 100.",
+                "status": status.HTTP_400_BAD_REQUEST,
+            }
 
 
         if student and school_class:
-
             if student.school_class_id != school_class.id:
-
-                return {
-                    'school_class': (
-                        'The selected class does not belong '
-                        'to this student.'
-                    )
-                }, status.HTTP_400_BAD_REQUEST
+                # return {
+                #     'school_class': (
+                #         'The selected class does not belong '
+                #         'to this student.'
+                #     )
+                # }, status.HTTP_400_BAD_REQUEST
+                return None, {
+                    "error": (
+                        "The selected class does not belong "
+                        "to this student."
+                    ),
+                    "status": status.HTTP_400_BAD_REQUEST,
+                }
 
 
         if user.role == 'teacher':
@@ -140,32 +148,44 @@ class GradeViewSet(
                 )
 
                 if not assignment_exists:
-
-                    return {
-                        'subject': (
-                            'You are not assigned to this '
-                            'subject for this class.'
-                        )
-                    }, status.HTTP_403_FORBIDDEN
+                    # return {
+                    #     'subject': (
+                    #         'You are not assigned to this '
+                    #         'subject for this class.'
+                    #     )
+                    # }, status.HTTP_403_FORBIDDEN
+                    return None, {
+                        "error": (
+                            "You are not assigned to this "
+                            "subject for this class."
+                        ),
+                        "status": status.HTTP_403_FORBIDDEN,}
 
 
         elif user.role == 'admin':
 
             if not teacher:
-
-                return {
-                    'teacher': 'This field is required for Admin.'
-                }, status.HTTP_400_BAD_REQUEST
+                # return {
+                #     'teacher': 'This field is required for Admin.'
+                # }, status.HTTP_400_BAD_REQUEST
+                return None, {
+                    "error": "This field is required for Admin.",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                }
 
         else:
+            # return {
+            #     'error': 'You are not allowed to manage grades.'
+            # }, status.HTTP_403_FORBIDDEN
+            return None, {
+                "error": "You are not allowed to manage grades.",
+                "status": status.HTTP_403_FORBIDDEN,
+            }
 
-            return {
-                'error': 'You are not allowed to manage grades.'
-            }, status.HTTP_403_FORBIDDEN
-
-        return {
-            'teacher': teacher
-        }, None
+        # return {
+        #     'teacher': teacher
+        # }, None
+        return teacher,None
 
     def create(self, request, *args, **kwargs):
 
@@ -176,31 +196,30 @@ class GradeViewSet(
         if not serializer.is_valid():
 
             return Response(
+                # {
+                #     'message': 'Validation failed.',
+                #     'errors': serializer.errors,
+                # },
+                # status=status.HTTP_400_BAD_REQUEST
                 {
-                    'message': 'Validation failed.',
-                    'errors': serializer.errors,
+                    "error": serializer.errors,
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        business_data, error_status = (
-            self._validate_grade_business_rules(
-                serializer.validated_data
-            )
+        teacher, error = self._validate_grade_business_rules(
+            serializer.validated_data
         )
 
-        if error_status:
-
+        if error:
             return Response(
                 {
-                    'message': 'Validation failed.',
-                    'errors': business_data,
+                    "error": error["error"],
                 },
-                status=error_status
-            )
+                status=error["status"],)
 
         grade = serializer.save(
-            teacher=business_data['teacher']
+            teacher=teacher
         )
 
         return Response(
@@ -221,34 +240,35 @@ class GradeViewSet(
         )
 
         if not serializer.is_valid():
-
+            # return Response(
+            #     {
+            #         'message': 'Validation failed.',
+            #         'errors': serializer.errors,
+            #     },
+            #     status=status.HTTP_400_BAD_REQUEST
+            # )
             return Response(
                 {
-                    'message': 'Validation failed.',
-                    'errors': serializer.errors,
+                    "error": serializer.errors,
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        business_data, error_status = (
-            self._validate_grade_business_rules(
-                serializer.validated_data,
-                grade=grade
-            )
-        )
+        teacher, error = self._validate_grade_business_rules(
+        serializer.validated_data,
+        grade=grade,
+)
 
-        if error_status:
-
+        if error:
             return Response(
                 {
-                    'message': 'Validation failed.',
-                    'errors': business_data,
+                    "error": error["error"],
                 },
-                status=error_status
+                status=error["status"],
             )
 
         grade = serializer.save(
-            teacher=business_data['teacher']
+            teacher=teacher
         )
 
         return Response(
@@ -270,34 +290,35 @@ class GradeViewSet(
         )
 
         if not serializer.is_valid():
-
+            # return Response(
+            #     {
+            #         'message': 'Validation failed.',
+            #         'errors': serializer.errors,
+            #     },
+            #     status=status.HTTP_400_BAD_REQUEST
+            # )
             return Response(
                 {
-                    'message': 'Validation failed.',
-                    'errors': serializer.errors,
+                    "error": serializer.errors,
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        business_data, error_status = (
-            self._validate_grade_business_rules(
-                serializer.validated_data,
-                grade=grade
-            )
+        teacher, error = self._validate_grade_business_rules(
+            serializer.validated_data,
+            grade=grade,
         )
 
-        if error_status:
-
+        if error:
             return Response(
                 {
-                    'message': 'Validation failed.',
-                    'errors': business_data,
+                    "error": error["error"],
                 },
-                status=error_status
+                status=error["status"],
             )
 
         grade = serializer.save(
-            teacher=business_data['teacher']
+            teacher=teacher
         )
 
         return Response(
