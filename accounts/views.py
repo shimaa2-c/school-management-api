@@ -242,7 +242,7 @@ class ChangePasswordView(APIView):
                         ]
                     },
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(
@@ -270,3 +270,20 @@ class UserViewSet(
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminRole]
+
+class DeleteAccountView(APIView):
+    permission_classes = [IsAdminRole]
+
+    def delete(self,request,pk,*args,**kwargs):
+        try:
+            user=User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {'error':'user not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        user.delete()
+        return Response(
+                {'message':'user successfully deleted'},
+                status=status.HTTP_204_NO_CONTENT
+            )
