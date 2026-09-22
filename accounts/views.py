@@ -228,7 +228,22 @@ class ChangePasswordView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         request.user.set_password(new_password)
-        request.user.save()
+        try:
+            request.user.save()
+        except Exception:
+            return Response(
+                {
+                    'success': False,
+                    'message': 'Failed to change password.',
+                    'data': None,
+                    'errors': {
+                        'password': [
+                            'An error occurred while saving the new password.'
+                        ]
+                    },
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {
@@ -239,7 +254,7 @@ class ChangePasswordView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-    
+
 class UserViewSet(
     CustomResponseMixin,
     viewsets.ModelViewSet,
